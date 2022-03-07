@@ -8,7 +8,7 @@
 import UIKit
 
 class ViewController: UIViewController {
-    
+     
     let numberOfButtonColorsInPaletteList = 10
     let squareSize: Int = 45
     var buttonColors = [UIColor]()
