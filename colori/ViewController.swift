@@ -9,6 +9,8 @@ import UIKit
 
 class ViewController: UIViewController {
      
+    @IBOutlet weak var memoryLabel: UILabel!
+    
     let numberOfButtonColorsInPaletteList = 10
     let squareSize: Int = 45
     var buttonColors = [UIColor]()
@@ -18,10 +20,13 @@ class ViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
+        reportMemory()
         setupNavigationBar()
         senseTapsByGestureRecoginzer()
         setupColorPalette()
+        var nav = self.navigationController?.navigationBar
+        nav?.barStyle = UIBarStyle.black
+        nav?.tintColor = .white
     }
     
     @objc func redoButtonAction() {
@@ -30,6 +35,7 @@ class ViewController: UIViewController {
             view.addSubview(subView)
             redoList = redoList.dropLast()
         }
+        reportMemory()
     }
     
     @objc func undoButtonAction() {
@@ -39,6 +45,7 @@ class ViewController: UIViewController {
                 redoList.append(subView as! UILabel)
                 subView.removeFromSuperview()
             }
+            reportMemory()
         }
         undoList = undoList.dropLast()
     }
@@ -49,14 +56,17 @@ class ViewController: UIViewController {
                 label.removeFromSuperview()
             }
         }
+        reportMemory()
     }
     
     @objc func tapScreenAction(gesture: UITapGestureRecognizer) {
         let location = gesture.location(in: view)
         insertSubView(screenCoordinate: location)
+        reportMemory()
     }
     
     func setupNavigationBar() {
+        reportMemory()
         let redoButton = UIBarButtonItem(title: "Redo", style: .plain, target: self, action: #selector(redoButtonAction))
         let undoButton = UIBarButtonItem(title: "Undo", style: .plain, target: self, action: #selector(undoButtonAction))
         navigationItem.rightBarButtonItems = [undoButton, redoButton]
@@ -115,6 +125,29 @@ class ViewController: UIViewController {
         currentButtonIndex = sender.tag
         setPaletteButtonsTitle()
     }
+    
+    func reportMemory() {
+        var taskInfo = mach_task_basic_info()
+        var count = mach_msg_type_number_t(MemoryLayout<mach_task_basic_info>.size)/4
+        let kerr: kern_return_t = withUnsafeMutablePointer(to: &taskInfo) {
+            $0.withMemoryRebound(to: integer_t.self, capacity: 1) {
+                task_info(mach_task_self_, task_flavor_t(MACH_TASK_BASIC_INFO), $0, &count)
+            }
+        }
+        if kerr == KERN_SUCCESS {
+            print("Memory used in bytes: \(taskInfo.resident_size)")
+//            memoryLabel.text = "\(taskInfo.resident_size)"
+            title  = "\(taskInfo.resident_size)"
+        }
+        else {
+            print("Error with task_info(): " +
+                  (String(cString: mach_error_string(kerr), encoding: String.Encoding.ascii) ?? "unknown error"))
+            title = "\(String(describing: mach_error_string(kerr)))"
+//            memoryLabel.text = "\(String(describing: mach_error_string(kerr)))"
+
+        }
+    }
+    
 }
 
 extension UIColor {
