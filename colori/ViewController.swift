@@ -9,10 +9,12 @@ import UIKit
 
 class ViewController: UIViewController {
     
-    var numberOfButtonColorsInPaletteList = 20
+    var numberOfButtonColorsInPaletteList = 15
     let subViewSize: Int = 50
     var buttonColors = [UIColor]()
     var currentButtonIndex: Int = 1
+    var undoList = [UIView]()
+    var redoList = [UIView]()
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -29,11 +31,22 @@ class ViewController: UIViewController {
     }
     
     @objc func redoButtonAction() {
-        print("redo")
+        if let subView = redoList.last {
+            undoList.append(subView)
+            view.addSubview(subView)
+            redoList = redoList.dropLast()
+        }
     }
     
     @objc func undoButtonAction() {
-        print("undo")
+        guard let last = undoList.last else { return }
+        for subView in view.subviews {
+            if subView == last {
+                redoList.append(subView as! UILabel)
+                subView.removeFromSuperview()
+            }
+        }
+        undoList = undoList.dropLast()
     }
     
     func senseTapsByGestureRecoginzer() {
@@ -42,20 +55,17 @@ class ViewController: UIViewController {
     }
     
     func insertSubView(screenLocation: CGPoint) {
-        //        viewsForRedo = []
+        redoList = []
         let size = CGSize(width: subViewSize, height: subViewSize)
         let position = CGPoint(x: Int(screenLocation.x) - (subViewSize / 2), y: Int(screenLocation.y) - (subViewSize / 2))
-        
-        //creating a label inside subViews to show number of subViews
         let label = UILabel(frame: CGRect(origin: position, size: size))
+        label.backgroundColor = buttonColors[currentButtonIndex]
         label.textColor = .white
         label.textAlignment = .center
-        label.backgroundColor = buttonColors[currentButtonIndex]
         label.text = view.subviews.filter({ subview in
             subview.backgroundColor == buttonColors[currentButtonIndex]}).count.description
-        
         view.addSubview(label)
-        //        viewsForUndo.append(label)
+        undoList.append(label)
     }
     
     @objc func tapScreenAction(gesture: UITapGestureRecognizer) {
@@ -64,10 +74,8 @@ class ViewController: UIViewController {
     }
     
     func setupColorPalette() {
-        
         let width = UIScreen.main.bounds.width / CGFloat(numberOfButtonColorsInPaletteList)
         let height = width
-        
         for i in 0..<numberOfButtonColorsInPaletteList {
             let position = CGPoint(x: width * CGFloat(i), y: UIScreen.main.bounds.height - (2.5 * height))
             let buttonSize = CGSize(width: width, height: height)
@@ -77,14 +85,12 @@ class ViewController: UIViewController {
             buttonColors.append(buttonColor)
             button.tag = i
             button.addTarget(self, action: #selector(bottomButtonsAction), for: .touchUpInside)
-            
             view.addSubview(button)
         }
         setPaletteButtonsTitle()
     }
     
     func setPaletteButtonsTitle() {
-        
         for subview in self.view.subviews {
             if subview is UIButton {
                 let button = subview as! UIButton
@@ -100,7 +106,6 @@ class ViewController: UIViewController {
         currentButtonIndex = sender.tag
         setPaletteButtonsTitle()
     }
-    
 }
 
 extension UIColor {
